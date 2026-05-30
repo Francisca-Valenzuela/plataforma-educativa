@@ -48,8 +48,10 @@ Dockerfile
 mvnw
 mvnw.cmd
 pom.xml
+src/main/java/com/duoc/plataforma_educativa/config/StorageConfig.java
 src/main/java/com/duoc/plataforma_educativa/controller/CursoController.java
 src/main/java/com/duoc/plataforma_educativa/controller/InscripcionController.java
+src/main/java/com/duoc/plataforma_educativa/controller/S3Controller.java
 src/main/java/com/duoc/plataforma_educativa/dto/InscripcionRequest.java
 src/main/java/com/duoc/plataforma_educativa/model/Curso.java
 src/main/java/com/duoc/plataforma_educativa/model/Inscripcion.java
@@ -58,12 +60,445 @@ src/main/java/com/duoc/plataforma_educativa/repository/CursoRepository.java
 src/main/java/com/duoc/plataforma_educativa/repository/InscripcionRepository.java
 src/main/java/com/duoc/plataforma_educativa/service/CursoService.java
 src/main/java/com/duoc/plataforma_educativa/service/InscripcionService.java
+src/main/java/com/duoc/plataforma_educativa/service/S3Service.java
 src/main/resources/application.properties
 src/test/java/com/duoc/plataforma_educativa/PlataformaEducativaApplicationTests.java
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/main/java/com/duoc/plataforma_educativa/config/StorageConfig.java">
+package com.duoc.plataforma_educativa.config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+
+/**
+ * Configuración del cliente AWS S3 usando SDK v2.
+ * Las credenciales se leen desde variables de entorno:
+ *   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, AWS_REGION
+ */
+@Configuration
+public class StorageConfig {
+
+    @Value("${aws.region:us-east-1}")
+    private String awsRegion;
+
+    @Bean
+    public S3Client s3Client() {
+        String accessKeyId     = System.getenv("AWS_ACCESS_KEY_ID");
+        String secretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY");
+        String sessionToken    = System.getenv("AWS_SESSION_TOKEN");
+
+        if (accessKeyId == null || secretAccessKey == null || sessionToken == null) {
+            throw new IllegalStateException(
+                "Las variables de entorno AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY " +
+                "y AWS_SESSION_TOKEN deben estar configuradas."
+            );
+        }
+
+        AwsSessionCredentials credentials = AwsSessionCredentials.create(
+                accessKeyId,
+                secretAccessKey,
+                sessionToken
+        );
+
+        return S3Client.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .build();
+    }
+}
+</file>
+
+<file path="src/main/java/com/duoc/plataforma_educativa/controller/S3Controller.java">
+package com.duoc.plataforma_educativa.controller;
+
+import com.duoc.plataforma_educativa.service.S3Service;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+
+import java.io.IOException;
+
+/**
+ * Controlador REST para operaciones de almacenamiento en AWS S3.
+ *
+ * Endpoints expuestos:
+ *   POST   /inscripciones/{id}/resumen/subir      → sube el resumen a S3
+ *   GET    /inscripciones/{id}/resumen/descargar  → descarga el resumen desde S3
+ *   PUT    /inscripciones/{id}/resumen/reemplazar → reemplaza el resumen en S3
+ *   DELETE /inscripciones/{id}/resumen            → elimina el resumen de S3
+ */
+@RestController
+@RequestMapping("/inscripciones")
+public class S3Controller {
+
+    private final S3Service s3Service;
+
+    public S3Controller(S3Service s3Service) {
+        this.s3Service = s3Service;
+    }
+
+    // ── POST /inscripciones/{id}/resumen/subir ─────────────────────────────────
+
+    /**
+     * Genera el resumen de la inscripción y lo sube al bucket S3.
+     * La key en S3 tendrá el formato: resumen-{id}/resumen_inscripcion_{id}.txt
+     */
+    @PostMapping("/{id}/resumen/subir")
+    public ResponseEntity<?> subirResumen(@PathVariable Long id) {
+        try {
+            String mensaje = s3Service.subirResumen(id);
+            return ResponseEntity.status(HttpStatus.CREATED).body(mensaje);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (S3Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al subir el archivo a S3: " + e.awsErrorDetails().errorMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error inesperado: " + e.getMessage());
+        }
+    }
+
+    // ── GET /inscripciones/{id}/resumen/descargar ──────────────────────────────
+
+    /**
+     * Descarga el archivo de resumen desde S3 y lo retorna como archivo descargable.
+     * Retorna 404 si el archivo no existe en el bucket.
+     */
+    @GetMapping("/{id}/resumen/descargar")
+    public ResponseEntity<?> descargarResumen(@PathVariable Long id) {
+        try {
+            byte[] bytes = s3Service.descargarResumen(id);
+
+            String filename = "resumen_inscripcion_" + id + ".txt";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.TEXT_PLAIN);
+            headers.setContentDisposition(
+                    ContentDisposition.attachment().filename(filename).build());
+            headers.setContentLength(bytes.length);
+
+            return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (S3Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al descargar el archivo desde S3: " + e.awsErrorDetails().errorMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error inesperado: " + e.getMessage());
+        }
+    }
+
+    // ── PUT /inscripciones/{id}/resumen/reemplazar ─────────────────────────────
+
+    /**
+     * Recibe un archivo via MultipartFile y reemplaza el resumen existente en S3.
+     * Usa la misma key para sobreescribir el objeto.
+     * Body: form-data con campo "archivo" de tipo File.
+     */
+    @PutMapping("/{id}/resumen/reemplazar")
+    public ResponseEntity<?> reemplazarResumen(
+            @PathVariable Long id,
+            @RequestParam("archivo") MultipartFile archivo) {
+        try {
+            if (archivo.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body("El archivo enviado está vacío. Por favor adjunte un archivo válido.");
+            }
+            String mensaje = s3Service.reemplazarResumen(id, archivo);
+            return ResponseEntity.ok(mensaje);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("No se pudo leer el archivo enviado: " + e.getMessage());
+        } catch (S3Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al reemplazar el archivo en S3: " + e.awsErrorDetails().errorMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error inesperado: " + e.getMessage());
+        }
+    }
+
+    // ── DELETE /inscripciones/{id}/resumen ─────────────────────────────────────
+
+    /**
+     * Elimina el archivo de resumen de S3.
+     * Retorna 404 si el archivo no existe en el bucket antes de intentar eliminarlo.
+     */
+    @DeleteMapping("/{id}/resumen")
+    public ResponseEntity<?> eliminarResumen(@PathVariable Long id) {
+        try {
+            String mensaje = s3Service.eliminarResumen(id);
+            return ResponseEntity.ok(mensaje);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalStateException e) {
+            // El archivo no existe en S3
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (S3Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al eliminar el archivo de S3: " + e.awsErrorDetails().errorMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error inesperado: " + e.getMessage());
+        }
+    }
+}
+</file>
+
+<file path="src/main/java/com/duoc/plataforma_educativa/service/S3Service.java">
+package com.duoc.plataforma_educativa.service;
+
+import com.duoc.plataforma_educativa.model.Curso;
+import com.duoc.plataforma_educativa.model.Inscripcion;
+import com.duoc.plataforma_educativa.repository.InscripcionRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.format.DateTimeFormatter;
+
+/**
+ * Servicio que encapsula todas las operaciones sobre AWS S3:
+ *   - Generar contenido del resumen de inscripción como texto
+ *   - Subir archivo al bucket
+ *   - Descargar archivo desde el bucket
+ *   - Reemplazar archivo en el bucket
+ *   - Eliminar archivo del bucket
+ */
+@Service
+public class S3Service {
+
+    private final S3Client s3Client;
+    private final InscripcionRepository inscripcionRepository;
+
+    @Value("${aws.s3.bucket-name}")
+    private String bucketName;
+
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+    public S3Service(S3Client s3Client, InscripcionRepository inscripcionRepository) {
+        this.s3Client               = s3Client;
+        this.inscripcionRepository  = inscripcionRepository;
+    }
+
+    // ── Key S3 ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Construye la key S3 para una inscripción:
+     * resumen-{id}/resumen_inscripcion_{id}.txt
+     */
+    public String buildS3Key(Long id) {
+        return String.format("resumen-%d/resumen_inscripcion_%d.txt", id, id);
+    }
+
+    // ── Generar contenido del resumen ──────────────────────────────────────────
+
+    /**
+     * Genera el contenido textual del resumen de inscripción.
+     * Se usa tanto para guardar en disco como para subir a S3.
+     */
+    public String generarContenidoResumen(Inscripcion ins) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("================================================\n");
+        sb.append("   RESUMEN DE INSCRIPCIÓN - PLATAFORMA EDUCATIVA\n");
+        sb.append("================================================\n\n");
+        sb.append(String.format("ID de Inscripción : %d%n", ins.getId()));
+        sb.append(String.format("Estudiante        : %s%n", ins.getNombreEstudiante()));
+        sb.append(String.format("Fecha             : %s%n",
+                ins.getFechaInscripcion().format(FORMATTER)));
+        sb.append("\n------------------------------------------------\n");
+        sb.append("CURSOS INSCRITOS:\n");
+        sb.append("------------------------------------------------\n");
+
+        for (Curso curso : ins.getCursos()) {
+            sb.append(String.format("  - Nombre     : %s%n", curso.getNombre()));
+            sb.append(String.format("    Instructor : %s%n", curso.getInstructor()));
+            sb.append(String.format("    Duración   : %d horas%n", curso.getDuracion()));
+            sb.append(String.format("    Costo      : $%.2f%n", curso.getCosto()));
+            sb.append("\n");
+        }
+
+        sb.append("------------------------------------------------\n");
+        sb.append(String.format("TOTAL A PAGAR     : $%.2f%n", ins.getTotalPagar()));
+        sb.append("================================================\n");
+        return sb.toString();
+    }
+
+    // ── Generar archivo físico ─────────────────────────────────────────────────
+
+    /**
+     * Genera un archivo .txt físico en el sistema de archivos temporal del servidor
+     * y retorna el Path para que el controller pueda servirlo como descarga.
+     */
+    public Path generarArchivoFisico(Long id) throws IOException {
+        Inscripcion ins = obtenerInscripcion(id);
+        String contenido = generarContenidoResumen(ins);
+
+        Path tempFile = Files.createTempFile(
+                "resumen_inscripcion_" + id + "_", ".txt");
+        Files.writeString(tempFile, contenido, StandardCharsets.UTF_8);
+        return tempFile;
+    }
+
+    // ── Subir a S3 ─────────────────────────────────────────────────────────────
+
+    /**
+     * Genera el resumen de la inscripción y lo sube al bucket S3.
+     * Key: resumen-{id}/resumen_inscripcion_{id}.txt
+     */
+    public String subirResumen(Long id) {
+        Inscripcion ins = obtenerInscripcion(id);
+        String contenido = generarContenidoResumen(ins);
+        String key = buildS3Key(id);
+
+        byte[] bytes = contenido.getBytes(StandardCharsets.UTF_8);
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .contentType("text/plain; charset=utf-8")
+                .contentLength((long) bytes.length)
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromBytes(bytes));
+
+        return String.format("Resumen de inscripción %d subido exitosamente. Key: %s", id, key);
+    }
+
+    // ── Descargar desde S3 ─────────────────────────────────────────────────────
+
+    /**
+     * Descarga el archivo de resumen desde S3 y retorna sus bytes.
+     * Lanza NoSuchKeyException si el archivo no existe.
+     */
+    public byte[] descargarResumen(Long id) {
+        String key = buildS3Key(id);
+        validarExistencia(key, id);
+
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+        try (ResponseInputStream<GetObjectResponse> response = s3Client.getObject(request)) {
+            return response.readAllBytes();
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Error al leer el archivo desde S3 para la inscripción " + id, e);
+        }
+    }
+
+    // ── Reemplazar en S3 ───────────────────────────────────────────────────────
+
+    /**
+     * Reemplaza el archivo de resumen en S3 con el contenido del MultipartFile recibido.
+     * Usa la misma key para sobreescribir el objeto existente.
+     */
+    public String reemplazarResumen(Long id, MultipartFile archivo) throws IOException {
+        // Validar que la inscripción exista en BD
+        obtenerInscripcion(id);
+        String key = buildS3Key(id);
+
+        byte[] bytes = archivo.getBytes();
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .contentType("text/plain; charset=utf-8")
+                .contentLength((long) bytes.length)
+                .build();
+
+        s3Client.putObject(request, RequestBody.fromBytes(bytes));
+
+        return String.format("Resumen de inscripción %d reemplazado exitosamente. Key: %s", id, key);
+    }
+
+    // ── Eliminar de S3 ─────────────────────────────────────────────────────────
+
+    /**
+     * Elimina el archivo de resumen de S3.
+     * Valida primero que el objeto exista; si no, lanza IllegalStateException (→ 404).
+     */
+    public String eliminarResumen(Long id) {
+        String key = buildS3Key(id);
+        validarExistencia(key, id);
+
+        DeleteObjectRequest request = DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+        s3Client.deleteObject(request);
+
+        return String.format("Resumen de inscripción %d eliminado exitosamente del bucket.", id);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    /**
+     * Busca la inscripción en la base de datos; lanza excepción si no existe.
+     */
+    private Inscripcion obtenerInscripcion(Long id) {
+        return inscripcionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No existe una inscripción con ID: " + id));
+    }
+
+    /**
+     * Verifica que un objeto exista en S3 usando HeadObject.
+     * Si no existe (HTTP 404), lanza IllegalStateException con mensaje descriptivo.
+     * Si ocurre otro error de S3, lo relanza.
+     */
+    private void validarExistencia(String key, Long id) {
+        try {
+            HeadObjectRequest headRequest = HeadObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .build();
+            s3Client.headObject(headRequest);
+        } catch (S3Exception e) {
+            // El SDK v2 devuelve un status 404 dentro de S3Exception cuando el objeto no existe en un headObject
+            if (e.statusCode() == 404) {
+                throw new IllegalStateException(
+                        "No se encontró el resumen de la inscripción " + id +
+                        " en S3. Primero debe subirlo usando POST /inscripciones/" + id + "/resumen/subir");
+            }
+            // Si es otro error (ej. credenciales inválidas, bucket no existe), relanzamos la excepción
+            throw e;
+        }
+    }
+}
+</file>
 
 <file path=".gitattributes">
 /mvnw text eol=lf
@@ -142,10 +577,13 @@ jobs:
             docker stop plataforma-educativa || true
             docker rm   plataforma-educativa || true
 
-            # Iniciar el nuevo contenedor en puerto 8080
+            # Iniciar el nuevo contenedor en puerto 8080 inyectando credenciales S3
             docker run -d \
               --name plataforma-educativa \
               -p 8080:8080 \
+              -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+              -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+              -e AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}" \
               --restart unless-stopped \
               ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-educativa:latest
           EOF
@@ -194,35 +632,18 @@ distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-mav
 </file>
 
 <file path="Dockerfile">
-# ── Etapa 1: Build ───────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jdk AS buildstage
-
 RUN apt-get update && apt-get install -y maven
-
 WORKDIR /app
-
-# Copiar dependencias primero para aprovechar cache de Docker
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
-
-# Copiar código fuente
 COPY src /app/src
-
-# Compilar y empaquetar (sin tests para agilizar el pipeline)
 RUN mvn clean package -DskipTests
 
-# ── Etapa 2: Runtime ─────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jdk
-
 WORKDIR /app
-
-# Copiar solo el .jar generado desde la etapa de build
 COPY --from=buildstage /app/target/plataforma-educativa-0.0.1-SNAPSHOT.jar /app/app.jar
-
-# Exponer el puerto del microservicio
 EXPOSE 8080
-
-# Comando de arranque
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 </file>
 
@@ -747,8 +1168,23 @@ Write-Output "MVN_CMD=$MAVEN_HOME/bin/$MVN_CMD"
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<aws.sdk.version>2.26.12</aws.sdk.version>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>software.amazon.awssdk</groupId>
+				<artifactId>bom</artifactId>
+				<version>${aws.sdk.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
@@ -763,10 +1199,26 @@ Write-Output "MVN_CMD=$MAVEN_HOME/bin/$MVN_CMD"
 		</dependency>
 
 		<dependency>
-			<groupId>com.oracle.database.jdbc</groupId>
-			<artifactId>ojdbc11</artifactId>
-			<scope>runtime</scope>
+           <groupId>com.h2database</groupId>
+           <artifactId>h2</artifactId>
+           <scope>runtime</scope>
+        </dependency>
+
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>sts</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>apache-client</artifactId>
+		</dependency>
+
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -851,23 +1303,37 @@ package com.duoc.plataforma_educativa.controller;
 import com.duoc.plataforma_educativa.dto.InscripcionRequest;
 import com.duoc.plataforma_educativa.model.Inscripcion;
 import com.duoc.plataforma_educativa.service.InscripcionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.duoc.plataforma_educativa.service.S3Service;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Controlador REST para inscripción de estudiantes.
  * Expone el endpoint:
- *   POST /inscripciones → inscribe un estudiante en uno o más cursos,
- *                         calcula el total y retorna el resumen/boleta.
+ *  POST /inscripciones                          → inscribe un estudiante en uno o más cursos,  calcula el total y retorna el resumen/boleta.
+ *  GET  /inscripciones/{id}/resumen/generar     → genera y descarga el resumen como .txt
  */
 @RestController
 @RequestMapping("/inscripciones")
 public class InscripcionController {
 
-    @Autowired
+    
     private InscripcionService inscripcionService;
+    private final S3Service s3Service;
+
+    public InscripcionController(InscripcionService inscripcionService,
+                                 S3Service s3Service) {
+        this.inscripcionService = inscripcionService;
+        this.s3Service          = s3Service;
+    }
 
     /**
      * POST /inscripciones
@@ -895,6 +1361,45 @@ public class InscripcionController {
             return ResponseEntity.status(HttpStatus.CREATED).body(inscripcion);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * GET /inscripciones/{id}/resumen/generar
+     * Genera un archivo .txt físico con el resumen de la inscripción y lo retorna
+     * como descarga directa (Content-Disposition: attachment).
+     *
+     * El archivo contiene: ID, nombre del estudiante, lista de cursos
+     * (nombre, instructor, duración, costo), total a pagar y fecha de inscripción.
+     */
+    @GetMapping("/{id}/resumen/generar")
+    public ResponseEntity<?> generarResumen(@PathVariable Long id) {
+        Path tempFile = null;
+        try {
+            // Genera el archivo temporal en el servidor
+            tempFile = s3Service.generarArchivoFisico(id);
+            byte[] bytes = Files.readAllBytes(tempFile);
+
+            String filename = "resumen_inscripcion_" + id + ".txt";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.TEXT_PLAIN);
+            headers.setContentDisposition(
+                    ContentDisposition.attachment().filename(filename).build());
+            headers.setContentLength(bytes.length);
+
+            return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al generar el archivo de resumen: " + e.getMessage());
+        } finally {
+            // Limpieza: elimina el archivo temporal del servidor después de enviarlo
+            if (tempFile != null) {
+                try { Files.deleteIfExists(tempFile); } catch (IOException ignored) {}
+            }
         }
     }
 }
@@ -1212,23 +1717,31 @@ public class InscripcionService {
 
 <file path="src/main/resources/application.properties">
 # =============================================
-# CONFIGURACIÓN ORACLE CLOUD
+# CONFIGURACIÓN H2 (base de datos en memoria)
 # =============================================
-spring.datasource.url=jdbc:oracle:thin:@<TU_SERVICE_NAME>?TNS_ADMIN=/app/wallet
-spring.datasource.username=TU_USUARIO_ORACLE
-spring.datasource.password=TU_PASSWORD_ORACLE
-spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+spring.datasource.url=jdbc:h2:mem:plataforma_educativa;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
 
 # JPA / Hibernate
-spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
-spring.jpa.hibernate.ddl-auto=update
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.hibernate.ddl-auto=create-drop
 spring.jpa.show-sql=true
+
+# Consola H2 (opcional, útil para ver los datos en el navegador)
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
 
 # Puerto
 server.port=8080
 
 # Actuator
 management.endpoints.web.exposure.include=health,info
+
+# Configuración AW3 S3
+aws.s3.bucket-name=bucket-exp1-s2
+aws.region=${AWS_REGION:us-east-1}
 </file>
 
 <file path="src/test/java/com/duoc/plataforma_educativa/PlataformaEducativaApplicationTests.java">
