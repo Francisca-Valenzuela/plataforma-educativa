@@ -44,7 +44,6 @@ The content is organized as follows:
 .github/workflows/main.yml
 .gitignore
 .mvn/wrapper/maven-wrapper.properties
-codigo.xml
 Dockerfile
 mvnw
 mvnw.cmd
@@ -70,77 +69,6 @@ src/test/java/com/duoc/plataforma_educativa/PlataformaEducativaApplicationTests.
 <files>
 This section contains the contents of the repository's files.
 
-<file path="codigo.xml">
-This file is a merged representation of the entire codebase, combined into a single document by Repomix.
-
-<file_summary>
-This section contains a summary of this file.
-
-<purpose>
-This file contains a packed representation of the entire repository's contents.
-It is designed to be easily consumable by AI systems for analysis, code review,
-or other automated processes.
-</purpose>
-
-<file_format>
-The content is organized as follows:
-1. This summary section
-2. Repository information
-3. Directory structure
-4. Repository files (if enabled)
-5. Multiple file entries, each consisting of:
-  - File path as an attribute
-  - Full contents of the file
-</file_format>
-
-<usage_guidelines>
-- This file should be treated as read-only. Any changes should be made to the
-  original repository files, not this packed version.
-- When processing this file, use the file path to distinguish
-  between different files in the repository.
-- Be aware that this file may contain sensitive information. Handle it with
-  the same level of security as you would the original repository.
-</usage_guidelines>
-
-<notes>
-- Some files may have been excluded based on .gitignore rules and Repomix's configuration
-- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Files matching patterns in .gitignore are excluded
-- Files matching default ignore patterns are excluded
-- Files are sorted by Git change count (files with more changes are at the bottom)
-</notes>
-
-</file_summary>
-
-<directory_structure>
-.gitattributes
-.github/workflows/main.yml
-.gitignore
-.mvn/wrapper/maven-wrapper.properties
-Dockerfile
-mvnw
-mvnw.cmd
-pom.xml
-src/main/java/com/duoc/plataforma_educativa/config/StorageConfig.java
-src/main/java/com/duoc/plataforma_educativa/controller/CursoController.java
-src/main/java/com/duoc/plataforma_educativa/controller/InscripcionController.java
-src/main/java/com/duoc/plataforma_educativa/controller/S3Controller.java
-src/main/java/com/duoc/plataforma_educativa/dto/InscripcionRequest.java
-src/main/java/com/duoc/plataforma_educativa/model/Curso.java
-src/main/java/com/duoc/plataforma_educativa/model/Inscripcion.java
-src/main/java/com/duoc/plataforma_educativa/PlataformaEducativaApplication.java
-src/main/java/com/duoc/plataforma_educativa/repository/CursoRepository.java
-src/main/java/com/duoc/plataforma_educativa/repository/InscripcionRepository.java
-src/main/java/com/duoc/plataforma_educativa/service/CursoService.java
-src/main/java/com/duoc/plataforma_educativa/service/InscripcionService.java
-src/main/java/com/duoc/plataforma_educativa/service/S3Service.java
-src/main/resources/application.properties
-src/test/java/com/duoc/plataforma_educativa/PlataformaEducativaApplicationTests.java
-</directory_structure>
-
-<files>
-This section contains the contents of the repository's files.
-
 <file path=".gitattributes">
 /mvnw text eol=lf
 *.cmd text eol=crlf
@@ -1020,152 +948,6 @@ public class InscripcionRequest {
 }
 </file>
 
-<file path="src/main/java/com/duoc/plataforma_educativa/model/Curso.java">
-package com.duoc.plataforma_educativa.model;
-
-
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "CURSOS")
-public class Curso {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
-    @Column(nullable = false)
-    private String nombre;
-
-    @Column(nullable = false)
-    private String instructor;
-
-    @Column(nullable = false)
-    private Integer duracion; // en horas
-
-    @Column(nullable = false)
-    private Double costo;
-
-    // Constructores
-    public Curso() {}
-
-    public Curso(String nombre, String instructor, Integer duracion, Double costo) {
-        this.nombre = nombre;
-        this.instructor = instructor;
-        this.duracion = duracion;
-        this.costo = costo;
-    }
-
-    // Getters y Setters
-    public Long getId() { 
-        return id; 
-    }
-    public void setId(Long id) { 
-        this.id = id; 
-    }
-
-    public String getNombre() { 
-        return nombre; 
-    }
-    public void setNombre(String nombre) { 
-        this.nombre = nombre; 
-    }
-
-    public String getInstructor() { 
-        return instructor; 
-    }
-
-    public void setInstructor(String instructor) { 
-        this.instructor = instructor; 
-    }
-
-    public Integer getDuracion() { 
-        return duracion; 
-    }
-
-    public void setDuracion(Integer duracion) { 
-        this.duracion = duracion; 
-    }
-
-    public Double getCosto() { 
-        return costo; 
-    }
-
-    public void setCosto(Double costo) { 
-        this.costo = costo; 
-    }
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/model/Inscripcion.java">
-package com.duoc.plataforma_educativa.model;
-
-
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.List;
-
-@Entity
-@Table(name = "INSCRIPCIONES")
-public class Inscripcion {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
-    @Column(nullable = false)
-    private String nombreEstudiante;
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "INSCRIPCION_CURSOS",
-        joinColumns        = @JoinColumn(name = "INSCRIPCION_ID"),
-        inverseJoinColumns = @JoinColumn(name = "CURSO_ID")
-    )
-    private List<Curso> cursos;
-
-    @Column(nullable = false)
-    private Double totalPagar;
-
-    @Column(nullable = false)
-    private LocalDateTime fechaInscripcion;
-
-    // ── Constructores ──────────────────────────────────────
-    public Inscripcion() {}
-
-    public Inscripcion(String nombreEstudiante,
-                       List<Curso> cursos,
-                       Double totalPagar) {
-        this.nombreEstudiante = nombreEstudiante;
-        this.cursos           = cursos;
-        this.totalPagar       = totalPagar;
-        this.fechaInscripcion = LocalDateTime.now();
-    }
-
-    // ── Getters y Setters ──────────────────────────────────
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getNombreEstudiante() { return nombreEstudiante; }
-    public void setNombreEstudiante(String nombreEstudiante) {
-        this.nombreEstudiante = nombreEstudiante;
-    }
-
-    public List<Curso> getCursos() { return cursos; }
-    public void setCursos(List<Curso> cursos) { this.cursos = cursos; }
-
-    public Double getTotalPagar() { return totalPagar; }
-    public void setTotalPagar(Double totalPagar) {
-        this.totalPagar = totalPagar;
-    }
-
-    public LocalDateTime getFechaInscripcion() { return fechaInscripcion; }
-    public void setFechaInscripcion(LocalDateTime fechaInscripcion) {
-        this.fechaInscripcion = fechaInscripcion;
-    }
-}
-</file>
-
 <file path="src/main/java/com/duoc/plataforma_educativa/PlataformaEducativaApplication.java">
 package com.duoc.plataforma_educativa;
 
@@ -1536,1754 +1318,43 @@ public class S3Service {
         }
     }
 }
-</file>
-
-<file path="src/test/java/com/duoc/plataforma_educativa/PlataformaEducativaApplicationTests.java">
-package com.duoc.plataforma_educativa;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-@SpringBootTest
-class PlataformaEducativaApplicationTests {
-
-	@Test
-	void contextLoads() {
-	}
-
-}
-</file>
-
-<file path=".github/workflows/main.yml">
-name: Build and Push Docker Image
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      # Paso 1: Checkout del repositorio
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      # Paso 2: Autenticar en DockerHub
-      - name: Log in to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      # Paso 3: Construir la imagen Docker desde la raíz del proyecto
-      - name: Build Docker Image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-educativa:latest .
-
-      # Paso 4: Hacer push de la imagen a DockerHub
-      - name: Push Docker Image
-        run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-educativa:latest
-
-      # Paso 5: Configurar credenciales AWS (requerido para la sesión temporal de AWS Academy)
-      - name: Set up AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-
-      # Paso 5.5: Agregar la llave SSH privada para conectarse a EC2
-      - name: Add SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-      # Paso 6: Conectarse a EC2 via SSH y desplegar el contenedor
-      - name: SSH commands to deploy
-        run: |
-          ssh -i ~/.ssh/id_rsa \
-              -o StrictHostKeyChecking=no \
-              -o UserKnownHostsFile=/dev/null \
-              ${{ secrets.USER_SERVER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # Autenticar en DockerHub desde EC2
-            echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login \
-              -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-
-            # Descargar la última versión de la imagen
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-educativa:latest
-
-            # Detener y eliminar el contenedor previo si existe
-            docker stop plataforma-educativa || true
-            docker rm   plataforma-educativa || true
-
-            # Iniciar el nuevo contenedor en puerto 8080 inyectando credenciales S3
-            docker run -d \
-              --name plataforma-educativa \
-              -p 8080:8080 \
-              -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
-              -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-              -e AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}" \
-              --restart unless-stopped \
-              ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-educativa:latest
-          EOF
-</file>
-
-<file path="pom.xml">
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.14</version>
-		<relativePath/> <!-- lookup parent from repository -->
-	</parent>
-	<groupId>com.duoc</groupId>
-	<artifactId>plataforma-educativa</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
-	<properties>
-		<java.version>21</java.version>
-		<aws.sdk.version>2.26.12</aws.sdk.version>
-	</properties>
-
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>software.amazon.awssdk</groupId>
-				<artifactId>bom</artifactId>
-				<version>${aws.sdk.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
-
-	<dependencies>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-
-		<dependency>
-           <groupId>com.h2database</groupId>
-           <artifactId>h2</artifactId>
-           <scope>runtime</scope>
-        </dependency>
-
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>s3</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>sts</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>apache-client</artifactId>
-		</dependency>
-
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build>
-
-</project>
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/controller/InscripcionController.java">
-package com.duoc.plataforma_educativa.controller;
-
-import com.duoc.plataforma_educativa.dto.InscripcionRequest;
-import com.duoc.plataforma_educativa.model.Inscripcion;
-import com.duoc.plataforma_educativa.service.InscripcionService;
-import com.duoc.plataforma_educativa.service.S3Service;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-/**
- * Controlador REST para inscripción de estudiantes.
- * Expone el endpoint:
- *  POST /inscripciones                          → inscribe un estudiante en uno o más cursos,  calcula el total y retorna el resumen/boleta.
- *  GET  /inscripciones/{id}/resumen/generar     → genera y descarga el resumen como .txt
- */
-@RestController
-@RequestMapping("/inscripciones")
-public class InscripcionController {
-
-    
-    private InscripcionService inscripcionService;
-    private final S3Service s3Service;
-
-    public InscripcionController(InscripcionService inscripcionService,
-                                 S3Service s3Service) {
-        this.inscripcionService = inscripcionService;
-        this.s3Service          = s3Service;
-    }
-
-    /**
-     * POST /inscripciones
-     * Inscribe a un estudiante en los cursos indicados.
-     * Retorna un resumen (boleta) con:
-     *   - ID de inscripción
-     *   - Nombre del estudiante
-     *   - Lista de cursos inscritos (nombre, instructor, duración, costo)
-     *   - Total a pagar (suma de costos)
-     *   - Fecha de inscripción
-     *
-     * Body esperado (JSON):
-     * {
-     *   "nombreEstudiante": "Ana García",
-     *   "cursoIds": [1, 2, 3]
-     * }
-     */
-    @PostMapping
-    public ResponseEntity<?> inscribir(@RequestBody InscripcionRequest request) {
-        try {
-            Inscripcion inscripcion = inscripcionService.inscribir(
-                    request.getNombreEstudiante(),
-                    request.getCursoIds()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(inscripcion);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    /**
-     * GET /inscripciones/{id}/resumen/generar
-     * Genera un archivo .txt físico con el resumen de la inscripción y lo retorna
-     * como descarga directa (Content-Disposition: attachment).
-     *
-     * El archivo contiene: ID, nombre del estudiante, lista de cursos
-     * (nombre, instructor, duración, costo), total a pagar y fecha de inscripción.
-     */
-    @GetMapping("/{id}/resumen/generar")
-    public ResponseEntity<?> generarResumen(@PathVariable Long id) {
-        Path tempFile = null;
-        try {
-            // Genera el archivo temporal en el servidor
-            tempFile = s3Service.generarArchivoFisico(id);
-            byte[] bytes = Files.readAllBytes(tempFile);
-
-            String filename = "resumen_inscripcion_" + id + ".txt";
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.TEXT_PLAIN);
-            headers.setContentDisposition(
-                    ContentDisposition.attachment().filename(filename).build());
-            headers.setContentLength(bytes.length);
-
-            return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al generar el archivo de resumen: " + e.getMessage());
-        } finally {
-            // Limpieza: elimina el archivo temporal del servidor después de enviarlo
-            if (tempFile != null) {
-                try { Files.deleteIfExists(tempFile); } catch (IOException ignored) {}
-            }
-        }
-    }
-}
-</file>
-
-<file path="src/main/resources/application.properties">
-# =============================================
-# CONFIGURACIÓN H2 (base de datos en memoria)
-# =============================================
-spring.datasource.url=jdbc:h2:mem:plataforma_educativa;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-spring.datasource.driver-class-name=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
-
-# JPA / Hibernate
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-spring.jpa.hibernate.ddl-auto=create-drop
-spring.jpa.show-sql=true
-
-# Consola H2 (opcional, útil para ver los datos en el navegador)
-spring.h2.console.enabled=true
-spring.h2.console.path=/h2-console
-
-# Puerto
-server.port=8080
-
-# Actuator
-management.endpoints.web.exposure.include=health,info
-
-# Configuración AW3 S3
-aws.s3.bucket-name=bucket-exp1-s2
-aws.region=${AWS_REGION:us-east-1}
-</file>
-
-</files>
 </file>
 
 <file path="src/main/resources/data.sql">
-INSERT INTO curso (id, nombre, instructor, duracion, costo) VALUES (1, 'Java Avanzado', 'Carlos López', 40, 150000.00);
-INSERT INTO curso (id, nombre, instructor, duracion, costo) VALUES (2, 'Spring Boot', 'Ana Martínez', 30, 120000.00);
-
-INSERT INTO inscripcion (id, nombre_estudiante, fecha_inscripcion, total_pagar) VALUES (1, 'María González', '2025-05-30T10:00:00', 270000.00);
-
-INSERT INTO inscripcion_cursos (inscripcion_id, cursos_id) VALUES (1, 1);
-INSERT INTO inscripcion_cursos (inscripcion_id, cursos_id) VALUES (1, 2);
-</file>
-
-<file path=".gitattributes">
-/mvnw text eol=lf
-*.cmd text eol=crlf
-</file>
-
-<file path=".gitignore">
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
-.vscode/
-</file>
-
-<file path=".mvn/wrapper/maven-wrapper.properties">
-wrapperVersion=3.3.4
-distributionType=only-script
-distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.15/apache-maven-3.9.15-bin.zip
-</file>
-
-<file path="Dockerfile">
-FROM eclipse-temurin:21-jdk AS buildstage
-RUN apt-get update && apt-get install -y maven
-WORKDIR /app
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
-COPY src /app/src
-RUN mvn clean package -DskipTests
-
-FROM eclipse-temurin:21-jdk
-WORKDIR /app
-COPY --from=buildstage /app/target/plataforma-educativa-0.0.1-SNAPSHOT.jar /app/app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
-</file>
-
-<file path="mvnw">
-#!/bin/sh
-# ----------------------------------------------------------------------------
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-# ----------------------------------------------------------------------------
-
-# ----------------------------------------------------------------------------
-# Apache Maven Wrapper startup batch script, version 3.3.4
-#
-# Optional ENV vars
-# -----------------
-#   JAVA_HOME - location of a JDK home dir, required when download maven via java source
-#   MVNW_REPOURL - repo url base for downloading maven distribution
-#   MVNW_USERNAME/MVNW_PASSWORD - user and password for downloading maven
-#   MVNW_VERBOSE - true: enable verbose log; debug: trace the mvnw script; others: silence the output
-# ----------------------------------------------------------------------------
-
-set -euf
-[ "${MVNW_VERBOSE-}" != debug ] || set -x
-
-# OS specific support.
-native_path() { printf %s\\n "$1"; }
-case "$(uname)" in
-CYGWIN* | MINGW*)
-  [ -z "${JAVA_HOME-}" ] || JAVA_HOME="$(cygpath --unix "$JAVA_HOME")"
-  native_path() { cygpath --path --windows "$1"; }
-  ;;
-esac
-
-# set JAVACMD and JAVACCMD
-set_java_home() {
-  # For Cygwin and MinGW, ensure paths are in Unix format before anything is touched
-  if [ -n "${JAVA_HOME-}" ]; then
-    if [ -x "$JAVA_HOME/jre/sh/java" ]; then
-      # IBM's JDK on AIX uses strange locations for the executables
-      JAVACMD="$JAVA_HOME/jre/sh/java"
-      JAVACCMD="$JAVA_HOME/jre/sh/javac"
-    else
-      JAVACMD="$JAVA_HOME/bin/java"
-      JAVACCMD="$JAVA_HOME/bin/javac"
-
-      if [ ! -x "$JAVACMD" ] || [ ! -x "$JAVACCMD" ]; then
-        echo "The JAVA_HOME environment variable is not defined correctly, so mvnw cannot run." >&2
-        echo "JAVA_HOME is set to \"$JAVA_HOME\", but \"\$JAVA_HOME/bin/java\" or \"\$JAVA_HOME/bin/javac\" does not exist." >&2
-        return 1
-      fi
-    fi
-  else
-    JAVACMD="$(
-      'set' +e
-      'unset' -f command 2>/dev/null
-      'command' -v java
-    )" || :
-    JAVACCMD="$(
-      'set' +e
-      'unset' -f command 2>/dev/null
-      'command' -v javac
-    )" || :
-
-    if [ ! -x "${JAVACMD-}" ] || [ ! -x "${JAVACCMD-}" ]; then
-      echo "The java/javac command does not exist in PATH nor is JAVA_HOME set, so mvnw cannot run." >&2
-      return 1
-    fi
-  fi
-}
-
-# hash string like Java String::hashCode
-hash_string() {
-  str="${1:-}" h=0
-  while [ -n "$str" ]; do
-    char="${str%"${str#?}"}"
-    h=$(((h * 31 + $(LC_CTYPE=C printf %d "'$char")) % 4294967296))
-    str="${str#?}"
-  done
-  printf %x\\n $h
-}
-
-verbose() { :; }
-[ "${MVNW_VERBOSE-}" != true ] || verbose() { printf %s\\n "${1-}"; }
-
-die() {
-  printf %s\\n "$1" >&2
-  exit 1
-}
-
-trim() {
-  # MWRAPPER-139:
-  #   Trims trailing and leading whitespace, carriage returns, tabs, and linefeeds.
-  #   Needed for removing poorly interpreted newline sequences when running in more
-  #   exotic environments such as mingw bash on Windows.
-  printf "%s" "${1}" | tr -d '[:space:]'
-}
-
-scriptDir="$(dirname "$0")"
-scriptName="$(basename "$0")"
-
-# parse distributionUrl and optional distributionSha256Sum, requires .mvn/wrapper/maven-wrapper.properties
-while IFS="=" read -r key value; do
-  case "${key-}" in
-  distributionUrl) distributionUrl=$(trim "${value-}") ;;
-  distributionSha256Sum) distributionSha256Sum=$(trim "${value-}") ;;
-  esac
-done <"$scriptDir/.mvn/wrapper/maven-wrapper.properties"
-[ -n "${distributionUrl-}" ] || die "cannot read distributionUrl property in $scriptDir/.mvn/wrapper/maven-wrapper.properties"
-
-case "${distributionUrl##*/}" in
-maven-mvnd-*bin.*)
-  MVN_CMD=mvnd.sh _MVNW_REPO_PATTERN=/maven/mvnd/
-  case "${PROCESSOR_ARCHITECTURE-}${PROCESSOR_ARCHITEW6432-}:$(uname -a)" in
-  *AMD64:CYGWIN* | *AMD64:MINGW*) distributionPlatform=windows-amd64 ;;
-  :Darwin*x86_64) distributionPlatform=darwin-amd64 ;;
-  :Darwin*arm64) distributionPlatform=darwin-aarch64 ;;
-  :Linux*x86_64*) distributionPlatform=linux-amd64 ;;
-  *)
-    echo "Cannot detect native platform for mvnd on $(uname)-$(uname -m), use pure java version" >&2
-    distributionPlatform=linux-amd64
-    ;;
-  esac
-  distributionUrl="${distributionUrl%-bin.*}-$distributionPlatform.zip"
-  ;;
-maven-mvnd-*) MVN_CMD=mvnd.sh _MVNW_REPO_PATTERN=/maven/mvnd/ ;;
-*) MVN_CMD="mvn${scriptName#mvnw}" _MVNW_REPO_PATTERN=/org/apache/maven/ ;;
-esac
-
-# apply MVNW_REPOURL and calculate MAVEN_HOME
-# maven home pattern: ~/.m2/wrapper/dists/{apache-maven-<version>,maven-mvnd-<version>-<platform>}/<hash>
-[ -z "${MVNW_REPOURL-}" ] || distributionUrl="$MVNW_REPOURL$_MVNW_REPO_PATTERN${distributionUrl#*"$_MVNW_REPO_PATTERN"}"
-distributionUrlName="${distributionUrl##*/}"
-distributionUrlNameMain="${distributionUrlName%.*}"
-distributionUrlNameMain="${distributionUrlNameMain%-bin}"
-MAVEN_USER_HOME="${MAVEN_USER_HOME:-${HOME}/.m2}"
-MAVEN_HOME="${MAVEN_USER_HOME}/wrapper/dists/${distributionUrlNameMain-}/$(hash_string "$distributionUrl")"
-
-exec_maven() {
-  unset MVNW_VERBOSE MVNW_USERNAME MVNW_PASSWORD MVNW_REPOURL || :
-  exec "$MAVEN_HOME/bin/$MVN_CMD" "$@" || die "cannot exec $MAVEN_HOME/bin/$MVN_CMD"
-}
-
-if [ -d "$MAVEN_HOME" ]; then
-  verbose "found existing MAVEN_HOME at $MAVEN_HOME"
-  exec_maven "$@"
-fi
-
-case "${distributionUrl-}" in
-*?-bin.zip | *?maven-mvnd-?*-?*.zip) ;;
-*) die "distributionUrl is not valid, must match *-bin.zip or maven-mvnd-*.zip, but found '${distributionUrl-}'" ;;
-esac
-
-# prepare tmp dir
-if TMP_DOWNLOAD_DIR="$(mktemp -d)" && [ -d "$TMP_DOWNLOAD_DIR" ]; then
-  clean() { rm -rf -- "$TMP_DOWNLOAD_DIR"; }
-  trap clean HUP INT TERM EXIT
-else
-  die "cannot create temp dir"
-fi
-
-mkdir -p -- "${MAVEN_HOME%/*}"
-
-# Download and Install Apache Maven
-verbose "Couldn't find MAVEN_HOME, downloading and installing it ..."
-verbose "Downloading from: $distributionUrl"
-verbose "Downloading to: $TMP_DOWNLOAD_DIR/$distributionUrlName"
-
-# select .zip or .tar.gz
-if ! command -v unzip >/dev/null; then
-  distributionUrl="${distributionUrl%.zip}.tar.gz"
-  distributionUrlName="${distributionUrl##*/}"
-fi
-
-# verbose opt
-__MVNW_QUIET_WGET=--quiet __MVNW_QUIET_CURL=--silent __MVNW_QUIET_UNZIP=-q __MVNW_QUIET_TAR=''
-[ "${MVNW_VERBOSE-}" != true ] || __MVNW_QUIET_WGET='' __MVNW_QUIET_CURL='' __MVNW_QUIET_UNZIP='' __MVNW_QUIET_TAR=v
-
-# normalize http auth
-case "${MVNW_PASSWORD:+has-password}" in
-'') MVNW_USERNAME='' MVNW_PASSWORD='' ;;
-has-password) [ -n "${MVNW_USERNAME-}" ] || MVNW_USERNAME='' MVNW_PASSWORD='' ;;
-esac
-
-if [ -z "${MVNW_USERNAME-}" ] && command -v wget >/dev/null; then
-  verbose "Found wget ... using wget"
-  wget ${__MVNW_QUIET_WGET:+"$__MVNW_QUIET_WGET"} "$distributionUrl" -O "$TMP_DOWNLOAD_DIR/$distributionUrlName" || die "wget: Failed to fetch $distributionUrl"
-elif [ -z "${MVNW_USERNAME-}" ] && command -v curl >/dev/null; then
-  verbose "Found curl ... using curl"
-  curl ${__MVNW_QUIET_CURL:+"$__MVNW_QUIET_CURL"} -f -L -o "$TMP_DOWNLOAD_DIR/$distributionUrlName" "$distributionUrl" || die "curl: Failed to fetch $distributionUrl"
-elif set_java_home; then
-  verbose "Falling back to use Java to download"
-  javaSource="$TMP_DOWNLOAD_DIR/Downloader.java"
-  targetZip="$TMP_DOWNLOAD_DIR/$distributionUrlName"
-  cat >"$javaSource" <<-END
-	public class Downloader extends java.net.Authenticator
-	{
-	  protected java.net.PasswordAuthentication getPasswordAuthentication()
-	  {
-	    return new java.net.PasswordAuthentication( System.getenv( "MVNW_USERNAME" ), System.getenv( "MVNW_PASSWORD" ).toCharArray() );
-	  }
-	  public static void main( String[] args ) throws Exception
-	  {
-	    setDefault( new Downloader() );
-	    java.nio.file.Files.copy( java.net.URI.create( args[0] ).toURL().openStream(), java.nio.file.Paths.get( args[1] ).toAbsolutePath().normalize() );
-	  }
-	}
-	END
-  # For Cygwin/MinGW, switch paths to Windows format before running javac and java
-  verbose " - Compiling Downloader.java ..."
-  "$(native_path "$JAVACCMD")" "$(native_path "$javaSource")" || die "Failed to compile Downloader.java"
-  verbose " - Running Downloader.java ..."
-  "$(native_path "$JAVACMD")" -cp "$(native_path "$TMP_DOWNLOAD_DIR")" Downloader "$distributionUrl" "$(native_path "$targetZip")"
-fi
-
-# If specified, validate the SHA-256 sum of the Maven distribution zip file
-if [ -n "${distributionSha256Sum-}" ]; then
-  distributionSha256Result=false
-  if [ "$MVN_CMD" = mvnd.sh ]; then
-    echo "Checksum validation is not supported for maven-mvnd." >&2
-    echo "Please disable validation by removing 'distributionSha256Sum' from your maven-wrapper.properties." >&2
-    exit 1
-  elif command -v sha256sum >/dev/null; then
-    if echo "$distributionSha256Sum  $TMP_DOWNLOAD_DIR/$distributionUrlName" | sha256sum -c - >/dev/null 2>&1; then
-      distributionSha256Result=true
-    fi
-  elif command -v shasum >/dev/null; then
-    if echo "$distributionSha256Sum  $TMP_DOWNLOAD_DIR/$distributionUrlName" | shasum -a 256 -c >/dev/null 2>&1; then
-      distributionSha256Result=true
-    fi
-  else
-    echo "Checksum validation was requested but neither 'sha256sum' or 'shasum' are available." >&2
-    echo "Please install either command, or disable validation by removing 'distributionSha256Sum' from your maven-wrapper.properties." >&2
-    exit 1
-  fi
-  if [ $distributionSha256Result = false ]; then
-    echo "Error: Failed to validate Maven distribution SHA-256, your Maven distribution might be compromised." >&2
-    echo "If you updated your Maven version, you need to update the specified distributionSha256Sum property." >&2
-    exit 1
-  fi
-fi
-
-# unzip and move
-if command -v unzip >/dev/null; then
-  unzip ${__MVNW_QUIET_UNZIP:+"$__MVNW_QUIET_UNZIP"} "$TMP_DOWNLOAD_DIR/$distributionUrlName" -d "$TMP_DOWNLOAD_DIR" || die "failed to unzip"
-else
-  tar xzf${__MVNW_QUIET_TAR:+"$__MVNW_QUIET_TAR"} "$TMP_DOWNLOAD_DIR/$distributionUrlName" -C "$TMP_DOWNLOAD_DIR" || die "failed to untar"
-fi
-
-# Find the actual extracted directory name (handles snapshots where filename != directory name)
-actualDistributionDir=""
-
-# First try the expected directory name (for regular distributions)
-if [ -d "$TMP_DOWNLOAD_DIR/$distributionUrlNameMain" ]; then
-  if [ -f "$TMP_DOWNLOAD_DIR/$distributionUrlNameMain/bin/$MVN_CMD" ]; then
-    actualDistributionDir="$distributionUrlNameMain"
-  fi
-fi
-
-# If not found, search for any directory with the Maven executable (for snapshots)
-if [ -z "$actualDistributionDir" ]; then
-  # enable globbing to iterate over items
-  set +f
-  for dir in "$TMP_DOWNLOAD_DIR"/*; do
-    if [ -d "$dir" ]; then
-      if [ -f "$dir/bin/$MVN_CMD" ]; then
-        actualDistributionDir="$(basename "$dir")"
-        break
-      fi
-    fi
-  done
-  set -f
-fi
-
-if [ -z "$actualDistributionDir" ]; then
-  verbose "Contents of $TMP_DOWNLOAD_DIR:"
-  verbose "$(ls -la "$TMP_DOWNLOAD_DIR")"
-  die "Could not find Maven distribution directory in extracted archive"
-fi
-
-verbose "Found extracted Maven distribution directory: $actualDistributionDir"
-printf %s\\n "$distributionUrl" >"$TMP_DOWNLOAD_DIR/$actualDistributionDir/mvnw.url"
-mv -- "$TMP_DOWNLOAD_DIR/$actualDistributionDir" "$MAVEN_HOME" || [ -d "$MAVEN_HOME" ] || die "fail to move MAVEN_HOME"
-
-clean || :
-exec_maven "$@"
-</file>
-
-<file path="mvnw.cmd">
-<# : batch portion
-@REM ----------------------------------------------------------------------------
-@REM Licensed to the Apache Software Foundation (ASF) under one
-@REM or more contributor license agreements.  See the NOTICE file
-@REM distributed with this work for additional information
-@REM regarding copyright ownership.  The ASF licenses this file
-@REM to you under the Apache License, Version 2.0 (the
-@REM "License"); you may not use this file except in compliance
-@REM with the License.  You may obtain a copy of the License at
-@REM
-@REM    http://www.apache.org/licenses/LICENSE-2.0
-@REM
-@REM Unless required by applicable law or agreed to in writing,
-@REM software distributed under the License is distributed on an
-@REM "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-@REM KIND, either express or implied.  See the License for the
-@REM specific language governing permissions and limitations
-@REM under the License.
-@REM ----------------------------------------------------------------------------
-
-@REM ----------------------------------------------------------------------------
-@REM Apache Maven Wrapper startup batch script, version 3.3.4
-@REM
-@REM Optional ENV vars
-@REM   MVNW_REPOURL - repo url base for downloading maven distribution
-@REM   MVNW_USERNAME/MVNW_PASSWORD - user and password for downloading maven
-@REM   MVNW_VERBOSE - true: enable verbose log; others: silence the output
-@REM ----------------------------------------------------------------------------
-
-@IF "%__MVNW_ARG0_NAME__%"=="" (SET __MVNW_ARG0_NAME__=%~nx0)
-@SET __MVNW_CMD__=
-@SET __MVNW_ERROR__=
-@SET __MVNW_PSMODULEP_SAVE=%PSModulePath%
-@SET PSModulePath=
-@FOR /F "usebackq tokens=1* delims==" %%A IN (`powershell -noprofile "& {$scriptDir='%~dp0'; $script='%__MVNW_ARG0_NAME__%'; icm -ScriptBlock ([Scriptblock]::Create((Get-Content -Raw '%~f0'))) -NoNewScope}"`) DO @(
-  IF "%%A"=="MVN_CMD" (set __MVNW_CMD__=%%B) ELSE IF "%%B"=="" (echo %%A) ELSE (echo %%A=%%B)
-)
-@SET PSModulePath=%__MVNW_PSMODULEP_SAVE%
-@SET __MVNW_PSMODULEP_SAVE=
-@SET __MVNW_ARG0_NAME__=
-@SET MVNW_USERNAME=
-@SET MVNW_PASSWORD=
-@IF NOT "%__MVNW_CMD__%"=="" ("%__MVNW_CMD__%" %*)
-@echo Cannot start maven from wrapper >&2 && exit /b 1
-@GOTO :EOF
-: end batch / begin powershell #>
-
-$ErrorActionPreference = "Stop"
-if ($env:MVNW_VERBOSE -eq "true") {
-  $VerbosePreference = "Continue"
-}
-
-# calculate distributionUrl, requires .mvn/wrapper/maven-wrapper.properties
-$distributionUrl = (Get-Content -Raw "$scriptDir/.mvn/wrapper/maven-wrapper.properties" | ConvertFrom-StringData).distributionUrl
-if (!$distributionUrl) {
-  Write-Error "cannot read distributionUrl property in $scriptDir/.mvn/wrapper/maven-wrapper.properties"
-}
-
-switch -wildcard -casesensitive ( $($distributionUrl -replace '^.*/','') ) {
-  "maven-mvnd-*" {
-    $USE_MVND = $true
-    $distributionUrl = $distributionUrl -replace '-bin\.[^.]*$',"-windows-amd64.zip"
-    $MVN_CMD = "mvnd.cmd"
-    break
-  }
-  default {
-    $USE_MVND = $false
-    $MVN_CMD = $script -replace '^mvnw','mvn'
-    break
-  }
-}
-
-# apply MVNW_REPOURL and calculate MAVEN_HOME
-# maven home pattern: ~/.m2/wrapper/dists/{apache-maven-<version>,maven-mvnd-<version>-<platform>}/<hash>
-if ($env:MVNW_REPOURL) {
-  $MVNW_REPO_PATTERN = if ($USE_MVND -eq $False) { "/org/apache/maven/" } else { "/maven/mvnd/" }
-  $distributionUrl = "$env:MVNW_REPOURL$MVNW_REPO_PATTERN$($distributionUrl -replace "^.*$MVNW_REPO_PATTERN",'')"
-}
-$distributionUrlName = $distributionUrl -replace '^.*/',''
-$distributionUrlNameMain = $distributionUrlName -replace '\.[^.]*$','' -replace '-bin$',''
-
-$MAVEN_M2_PATH = "$HOME/.m2"
-if ($env:MAVEN_USER_HOME) {
-  $MAVEN_M2_PATH = "$env:MAVEN_USER_HOME"
-}
-
-if (-not (Test-Path -Path $MAVEN_M2_PATH)) {
-    New-Item -Path $MAVEN_M2_PATH -ItemType Directory | Out-Null
-}
-
-$MAVEN_WRAPPER_DISTS = $null
-if ((Get-Item $MAVEN_M2_PATH).Target[0] -eq $null) {
-  $MAVEN_WRAPPER_DISTS = "$MAVEN_M2_PATH/wrapper/dists"
-} else {
-  $MAVEN_WRAPPER_DISTS = (Get-Item $MAVEN_M2_PATH).Target[0] + "/wrapper/dists"
-}
-
-$MAVEN_HOME_PARENT = "$MAVEN_WRAPPER_DISTS/$distributionUrlNameMain"
-$MAVEN_HOME_NAME = ([System.Security.Cryptography.SHA256]::Create().ComputeHash([byte[]][char[]]$distributionUrl) | ForEach-Object {$_.ToString("x2")}) -join ''
-$MAVEN_HOME = "$MAVEN_HOME_PARENT/$MAVEN_HOME_NAME"
-
-if (Test-Path -Path "$MAVEN_HOME" -PathType Container) {
-  Write-Verbose "found existing MAVEN_HOME at $MAVEN_HOME"
-  Write-Output "MVN_CMD=$MAVEN_HOME/bin/$MVN_CMD"
-  exit $?
-}
-
-if (! $distributionUrlNameMain -or ($distributionUrlName -eq $distributionUrlNameMain)) {
-  Write-Error "distributionUrl is not valid, must end with *-bin.zip, but found $distributionUrl"
-}
-
-# prepare tmp dir
-$TMP_DOWNLOAD_DIR_HOLDER = New-TemporaryFile
-$TMP_DOWNLOAD_DIR = New-Item -Itemtype Directory -Path "$TMP_DOWNLOAD_DIR_HOLDER.dir"
-$TMP_DOWNLOAD_DIR_HOLDER.Delete() | Out-Null
-trap {
-  if ($TMP_DOWNLOAD_DIR.Exists) {
-    try { Remove-Item $TMP_DOWNLOAD_DIR -Recurse -Force | Out-Null }
-    catch { Write-Warning "Cannot remove $TMP_DOWNLOAD_DIR" }
-  }
-}
-
-New-Item -Itemtype Directory -Path "$MAVEN_HOME_PARENT" -Force | Out-Null
-
-# Download and Install Apache Maven
-Write-Verbose "Couldn't find MAVEN_HOME, downloading and installing it ..."
-Write-Verbose "Downloading from: $distributionUrl"
-Write-Verbose "Downloading to: $TMP_DOWNLOAD_DIR/$distributionUrlName"
-
-$webclient = New-Object System.Net.WebClient
-if ($env:MVNW_USERNAME -and $env:MVNW_PASSWORD) {
-  $webclient.Credentials = New-Object System.Net.NetworkCredential($env:MVNW_USERNAME, $env:MVNW_PASSWORD)
-}
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$webclient.DownloadFile($distributionUrl, "$TMP_DOWNLOAD_DIR/$distributionUrlName") | Out-Null
-
-# If specified, validate the SHA-256 sum of the Maven distribution zip file
-$distributionSha256Sum = (Get-Content -Raw "$scriptDir/.mvn/wrapper/maven-wrapper.properties" | ConvertFrom-StringData).distributionSha256Sum
-if ($distributionSha256Sum) {
-  if ($USE_MVND) {
-    Write-Error "Checksum validation is not supported for maven-mvnd. `nPlease disable validation by removing 'distributionSha256Sum' from your maven-wrapper.properties."
-  }
-  Import-Module $PSHOME\Modules\Microsoft.PowerShell.Utility -Function Get-FileHash
-  if ((Get-FileHash "$TMP_DOWNLOAD_DIR/$distributionUrlName" -Algorithm SHA256).Hash.ToLower() -ne $distributionSha256Sum) {
-    Write-Error "Error: Failed to validate Maven distribution SHA-256, your Maven distribution might be compromised. If you updated your Maven version, you need to update the specified distributionSha256Sum property."
-  }
-}
-
-# unzip and move
-Expand-Archive "$TMP_DOWNLOAD_DIR/$distributionUrlName" -DestinationPath "$TMP_DOWNLOAD_DIR" | Out-Null
-
-# Find the actual extracted directory name (handles snapshots where filename != directory name)
-$actualDistributionDir = ""
-
-# First try the expected directory name (for regular distributions)
-$expectedPath = Join-Path "$TMP_DOWNLOAD_DIR" "$distributionUrlNameMain"
-$expectedMvnPath = Join-Path "$expectedPath" "bin/$MVN_CMD"
-if ((Test-Path -Path $expectedPath -PathType Container) -and (Test-Path -Path $expectedMvnPath -PathType Leaf)) {
-  $actualDistributionDir = $distributionUrlNameMain
-}
-
-# If not found, search for any directory with the Maven executable (for snapshots)
-if (!$actualDistributionDir) {
-  Get-ChildItem -Path "$TMP_DOWNLOAD_DIR" -Directory | ForEach-Object {
-    $testPath = Join-Path $_.FullName "bin/$MVN_CMD"
-    if (Test-Path -Path $testPath -PathType Leaf) {
-      $actualDistributionDir = $_.Name
-    }
-  }
-}
-
-if (!$actualDistributionDir) {
-  Write-Error "Could not find Maven distribution directory in extracted archive"
-}
-
-Write-Verbose "Found extracted Maven distribution directory: $actualDistributionDir"
-Rename-Item -Path "$TMP_DOWNLOAD_DIR/$actualDistributionDir" -NewName $MAVEN_HOME_NAME | Out-Null
-try {
-  Move-Item -Path "$TMP_DOWNLOAD_DIR/$MAVEN_HOME_NAME" -Destination $MAVEN_HOME_PARENT | Out-Null
-} catch {
-  if (! (Test-Path -Path "$MAVEN_HOME" -PathType Container)) {
-    Write-Error "fail to move MAVEN_HOME"
-  }
-} finally {
-  try { Remove-Item $TMP_DOWNLOAD_DIR -Recurse -Force | Out-Null }
-  catch { Write-Warning "Cannot remove $TMP_DOWNLOAD_DIR" }
-}
-
-Write-Output "MVN_CMD=$MAVEN_HOME/bin/$MVN_CMD"
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/config/StorageConfig.java">
-package com.duoc.plataforma_educativa.config;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-
-/**
- * Configuración del cliente AWS S3 usando SDK v2.
- * Las credenciales se leen desde variables de entorno:
- *   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, AWS_REGION
- */
-@Configuration
-public class StorageConfig {
-
-    @Value("${aws.region:us-east-1}")
-    private String awsRegion;
-
-    @Bean
-    public S3Client s3Client() {
-        String accessKeyId     = System.getenv("AWS_ACCESS_KEY_ID");
-        String secretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY");
-        String sessionToken    = System.getenv("AWS_SESSION_TOKEN");
-
-        if (accessKeyId == null || secretAccessKey == null || sessionToken == null) {
-            throw new IllegalStateException(
-                "Las variables de entorno AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY " +
-                "y AWS_SESSION_TOKEN deben estar configuradas."
-            );
-        }
-
-        AwsSessionCredentials credentials = AwsSessionCredentials.create(
-                accessKeyId,
-                secretAccessKey,
-                sessionToken
-        );
-
-        return S3Client.builder()
-                .region(Region.of(awsRegion))
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
-                .build();
-    }
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/controller/CursoController.java">
-package com.duoc.plataforma_educativa.controller;
-
-import com.duoc.plataforma_educativa.model.Curso;
-import com.duoc.plataforma_educativa.service.CursoService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-/**
- * Controlador REST para la gestión de cursos.
- * Expone los endpoints:
- *   GET  /cursos  → lista todos los cursos disponibles
- *   POST /cursos  → agrega un nuevo curso a la oferta educativa
- */
-@RestController
-@RequestMapping("/cursos")
-public class CursoController {
-
-    @Autowired
-    private CursoService cursoService;
-
-    /**
-     * GET /cursos
-     * Retorna la lista completa de cursos con nombre, instructor, duración y costo.
-     * Si no hay cursos registrados, retorna lista vacía con HTTP 200.
-     */
-    @GetMapping
-    public ResponseEntity<List<Curso>> listarCursos() {
-        List<Curso> cursos = cursoService.listarCursos();
-        return ResponseEntity.ok(cursos);
-    }
-
-    /**
-     * POST /cursos
-     * Agrega un nuevo curso a la oferta educativa y lo persiste en Oracle Cloud.
-     * Body esperado (JSON):
-     * {
-     *   "nombre":     "Spring Boot Avanzado",
-     *   "instructor": "Carlos Valverde",
-     *   "duracion":   40,
-     *   "costo":      150000
-     * }
-     */
-    @PostMapping
-    public ResponseEntity<?> agregarCurso(@RequestBody Curso curso) {
-        try {
-            Curso nuevo = cursoService.agregarCurso(curso);
-            return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/controller/S3Controller.java">
-package com.duoc.plataforma_educativa.controller;
-
-import java.io.IOException;
-import java.nio.file.Path;
-
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.duoc.plataforma_educativa.service.S3Service;
-
-import software.amazon.awssdk.services.s3.model.S3Exception;
-
-/**
- * Controlador REST para operaciones de almacenamiento en AWS S3.
- *
- * Endpoints expuestos:
- * POST /inscripciones/{id}/resumen/subir → sube el resumen a S3
- * GET /inscripciones/{id}/resumen/descargar → descarga el resumen desde S3
- * PUT /inscripciones/{id}/resumen/reemplazar → reemplaza el resumen en S3
- * DELETE /inscripciones/{id}/resumen → elimina el resumen de S3
- */
-@RestController
-@RequestMapping("/inscripciones")
-public class S3Controller {
-
-    private final S3Service s3Service;
-
-    public S3Controller(S3Service s3Service) {
-        this.s3Service = s3Service;
-    }
-
-    // ── POST /inscripciones/{id}/resumen/subir ─────────────────────────────────
-
-    /**
-     * Genera el resumen de la inscripción y lo sube al bucket S3.
-     * La key en S3 tendrá el formato: resumen-{id}/resumen_inscripcion_{id}.txt
-     */
-    @PostMapping("/{id}/resumen/subir")
-    public ResponseEntity<?> subirResumen(@PathVariable Long id) {
-        try {
-            String mensaje = s3Service.subirResumen(id);
-            return ResponseEntity.status(HttpStatus.CREATED).body(mensaje);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (S3Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al subir el archivo a S3: " + e.awsErrorDetails().errorMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error inesperado: " + e.getMessage());
-        }
-    }
-
-    // ── GET /inscripciones/{id}/resumen/descargar ──────────────────────────────
-
-    /**
-     * Descarga el archivo de resumen desde S3 y lo retorna como archivo
-     * descargable.
-     * Retorna 404 si el archivo no existe en el bucket.
-     */
-    @GetMapping("/{id}/resumen/descargar")
-    public ResponseEntity<?> descargarResumen(@PathVariable Long id) {
-        try {
-            byte[] bytes = s3Service.descargarResumen(id);
-
-            String filename = "resumen_inscripcion_" + id + ".txt";
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.TEXT_PLAIN);
-            headers.setContentDisposition(
-                    ContentDisposition.attachment().filename(filename).build());
-            headers.setContentLength(bytes.length);
-
-            return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (S3Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al descargar el archivo desde S3: " + e.awsErrorDetails().errorMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error inesperado: " + e.getMessage());
-        }
-    }
-
-    // ── PUT /inscripciones/{id}/resumen/reemplazar ─────────────────────────────
-
-    /**
-     * Recibe un archivo via MultipartFile y reemplaza el resumen existente en S3.
-     * Usa la misma key para sobreescribir el objeto.
-     * Body: form-data con campo "archivo" de tipo File.
-     */
-    @PutMapping("/{id}/resumen/reemplazar")
-    public ResponseEntity<?> reemplazarResumen(
-            @PathVariable Long id,
-            @RequestParam("archivo") MultipartFile archivo) {
-        try {
-            if (archivo.isEmpty()) {
-                return ResponseEntity.badRequest()
-                        .body("El archivo enviado está vacío. Por favor adjunte un archivo válido.");
-            }
-            String mensaje = s3Service.reemplazarResumen(id, archivo);
-            return ResponseEntity.ok(mensaje);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("No se pudo leer el archivo enviado: " + e.getMessage());
-        } catch (S3Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al reemplazar el archivo en S3: " + e.awsErrorDetails().errorMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error inesperado: " + e.getMessage());
-        }
-    }
-
-    // ── DELETE /inscripciones/{id}/resumen ─────────────────────────────────────
-
-    /**
-     * Elimina el archivo de resumen de S3.
-     * Retorna 404 si el archivo no existe en el bucket antes de intentar
-     * eliminarlo.
-     */
-    @DeleteMapping("/{id}/resumen")
-    public ResponseEntity<?> eliminarResumen(@PathVariable Long id) {
-        try {
-            String mensaje = s3Service.eliminarResumen(id);
-            return ResponseEntity.ok(mensaje);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (IllegalStateException e) {
-            // El archivo no existe en S3
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (S3Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al eliminar el archivo de S3: " + e.awsErrorDetails().errorMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error inesperado: " + e.getMessage());
-        }
-    }
-
-    // ── GET /inscripciones/{id}/resumen/local ─────────────────────────────────
-    /**
-     * Endpoint correspondiente a la Semana 1.
-     * Genera un archivo físico temporal en el servidor y lo descarga directamente,
-     * sin interactuar con AWS S3.
-     */
-    @GetMapping("/{id}/resumen/local")
-    public ResponseEntity<?> descargarResumenLocal(@PathVariable Long id) {
-        try {
-            // 1. Llamamos a tu método que genera el archivo físico en el servidor
-            Path rutaArchivo = s3Service.generarArchivoFisico(id);
-            Resource recurso = new UrlResource(rutaArchivo.toUri());
-
-            String filename = "resumen_local_inscripcion_" + id + ".txt";
-
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_PLAIN)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                    .body(recurso);
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al generar el archivo local: " + e.getMessage());
-        }
-    }
-
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/dto/InscripcionRequest.java">
-package com.duoc.plataforma_educativa.dto;
-
-import java.util.List;
-
-/**
- * DTO que representa el cuerpo del request para crear una inscripción.
- * Recibe el nombre del estudiante y la lista de IDs de los cursos a inscribir.
- */
-public class InscripcionRequest {
-
-    private String nombreEstudiante;
-    private List<Long> cursoIds;
-
-    public InscripcionRequest() {}
-
-    public String getNombreEstudiante() { return nombreEstudiante; }
-    public void setNombreEstudiante(String nombreEstudiante) {
-        this.nombreEstudiante = nombreEstudiante;
-    }
-
-    public List<Long> getCursoIds() { return cursoIds; }
-    public void setCursoIds(List<Long> cursoIds) { this.cursoIds = cursoIds; }
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/model/Curso.java">
-package com.duoc.plataforma_educativa.model;
-
-
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "CURSOS")
-public class Curso {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
-    @Column(nullable = false)
-    private String nombre;
-
-    @Column(nullable = false)
-    private String instructor;
-
-    @Column(nullable = false)
-    private Integer duracion; // en horas
-
-    @Column(nullable = false)
-    private Double costo;
-
-    // Constructores
-    public Curso() {}
-
-    public Curso(String nombre, String instructor, Integer duracion, Double costo) {
-        this.nombre = nombre;
-        this.instructor = instructor;
-        this.duracion = duracion;
-        this.costo = costo;
-    }
-
-    // Getters y Setters
-    public Long getId() { 
-        return id; 
-    }
-    public void setId(Long id) { 
-        this.id = id; 
-    }
-
-    public String getNombre() { 
-        return nombre; 
-    }
-    public void setNombre(String nombre) { 
-        this.nombre = nombre; 
-    }
-
-    public String getInstructor() { 
-        return instructor; 
-    }
-
-    public void setInstructor(String instructor) { 
-        this.instructor = instructor; 
-    }
-
-    public Integer getDuracion() { 
-        return duracion; 
-    }
-
-    public void setDuracion(Integer duracion) { 
-        this.duracion = duracion; 
-    }
-
-    public Double getCosto() { 
-        return costo; 
-    }
-
-    public void setCosto(Double costo) { 
-        this.costo = costo; 
-    }
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/model/Inscripcion.java">
-package com.duoc.plataforma_educativa.model;
-
-
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.List;
-
-@Entity
-@Table(name = "INSCRIPCIONES")
-public class Inscripcion {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-
-    @Column(nullable = false)
-    private String nombreEstudiante;
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "INSCRIPCION_CURSOS",
-        joinColumns        = @JoinColumn(name = "INSCRIPCION_ID"),
-        inverseJoinColumns = @JoinColumn(name = "CURSO_ID")
-    )
-    private List<Curso> cursos;
-
-    @Column(nullable = false)
-    private Double totalPagar;
-
-    @Column(nullable = false)
-    private LocalDateTime fechaInscripcion;
-
-    // ── Constructores ──────────────────────────────────────
-    public Inscripcion() {}
-
-    public Inscripcion(String nombreEstudiante,
-                       List<Curso> cursos,
-                       Double totalPagar) {
-        this.nombreEstudiante = nombreEstudiante;
-        this.cursos           = cursos;
-        this.totalPagar       = totalPagar;
-        this.fechaInscripcion = LocalDateTime.now();
-    }
-
-    // ── Getters y Setters ──────────────────────────────────
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getNombreEstudiante() { return nombreEstudiante; }
-    public void setNombreEstudiante(String nombreEstudiante) {
-        this.nombreEstudiante = nombreEstudiante;
-    }
-
-    public List<Curso> getCursos() { return cursos; }
-    public void setCursos(List<Curso> cursos) { this.cursos = cursos; }
-
-    public Double getTotalPagar() { return totalPagar; }
-    public void setTotalPagar(Double totalPagar) {
-        this.totalPagar = totalPagar;
-    }
-
-    public LocalDateTime getFechaInscripcion() { return fechaInscripcion; }
-    public void setFechaInscripcion(LocalDateTime fechaInscripcion) {
-        this.fechaInscripcion = fechaInscripcion;
-    }
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/PlataformaEducativaApplication.java">
-package com.duoc.plataforma_educativa;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class PlataformaEducativaApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(PlataformaEducativaApplication.class, args);
-	}
-
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/repository/CursoRepository.java">
-package com.duoc.plataforma_educativa.repository;
-
-import com.duoc.plataforma_educativa.model.Curso;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface CursoRepository extends JpaRepository<Curso, Long> {
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/repository/InscripcionRepository.java">
-package com.duoc.plataforma_educativa.repository;
-
-import com.duoc.plataforma_educativa.model.Inscripcion;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> {
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/service/CursoService.java">
-package com.duoc.plataforma_educativa.service;
-
-import com.duoc.plataforma_educativa.model.Curso;
-import com.duoc.plataforma_educativa.repository.CursoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class CursoService {
-
-    @Autowired
-    private CursoRepository cursoRepository;
-
-    /**
-     * Retorna la lista completa de cursos disponibles.
-     */
-    public List<Curso> listarCursos() {
-        return cursoRepository.findAll();
-    }
-
-    /**
-     * Persiste un nuevo curso en la base de datos Oracle Cloud.
-     * Valida que nombre, instructor, duración y costo no sean nulos.
-     */
-    public Curso agregarCurso(Curso curso) {
-        if (curso.getNombre() == null || curso.getNombre().isBlank()) {
-            throw new IllegalArgumentException("El nombre del curso es obligatorio.");
-        }
-        if (curso.getInstructor() == null || curso.getInstructor().isBlank()) {
-            throw new IllegalArgumentException("El instructor del curso es obligatorio.");
-        }
-        if (curso.getDuracion() == null || curso.getDuracion() <= 0) {
-            throw new IllegalArgumentException("La duración debe ser mayor a 0 horas.");
-        }
-        if (curso.getCosto() == null || curso.getCosto() < 0) {
-            throw new IllegalArgumentException("El costo no puede ser negativo.");
-        }
-        return cursoRepository.save(curso);
-    }
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/service/InscripcionService.java">
-package com.duoc.plataforma_educativa.service;
-
-import com.duoc.plataforma_educativa.model.Curso;
-import com.duoc.plataforma_educativa.model.Inscripcion;
-import com.duoc.plataforma_educativa.repository.CursoRepository;
-import com.duoc.plataforma_educativa.repository.InscripcionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class InscripcionService {
-
-    @Autowired
-    private InscripcionRepository inscripcionRepository;
-
-    @Autowired
-    private CursoRepository cursoRepository;
-
-    /**
-     * Crea una inscripción para un estudiante.
-     * Recibe el nombre del estudiante y una lista de IDs de cursos.
-     * Calcula el total a pagar sumando el costo de cada curso.
-     * Persiste la inscripción en Oracle Cloud y retorna el resumen completo.
-     */
-    public Inscripcion inscribir(String nombreEstudiante, List<Long> cursoIds) {
-
-        if (nombreEstudiante == null || nombreEstudiante.isBlank()) {
-            throw new IllegalArgumentException("El nombre del estudiante es obligatorio.");
-        }
-        if (cursoIds == null || cursoIds.isEmpty()) {
-            throw new IllegalArgumentException("Debe seleccionar al menos un curso.");
-        }
-
-        // Buscar los cursos en BD; valida que todos existan
-        List<Curso> cursos = cursoRepository.findAllById(cursoIds);
-        if (cursos.size() != cursoIds.size()) {
-            throw new IllegalArgumentException("Uno o más IDs de curso no existen.");
-        }
-
-        // Calcular total sumando el costo de cada curso seleccionado
-        double total = cursos.stream()
-                .mapToDouble(Curso::getCosto)
-                .sum();
-
-        Inscripcion inscripcion = new Inscripcion(nombreEstudiante, cursos, total);
-        return inscripcionRepository.save(inscripcion);
-    }
-}
-</file>
-
-<file path="src/main/java/com/duoc/plataforma_educativa/service/S3Service.java">
-package com.duoc.plataforma_educativa.service;
-
-import com.duoc.plataforma_educativa.model.Curso;
-import com.duoc.plataforma_educativa.model.Inscripcion;
-import com.duoc.plataforma_educativa.repository.InscripcionRepository;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.format.DateTimeFormatter;
-
-/**
- * Servicio que encapsula todas las operaciones sobre AWS S3:
- *   - Generar contenido del resumen de inscripción como texto
- *   - Subir archivo al bucket
- *   - Descargar archivo desde el bucket
- *   - Reemplazar archivo en el bucket
- *   - Eliminar archivo del bucket
- */
-@Service
-public class S3Service {
-
-    private final S3Client s3Client;
-    private final InscripcionRepository inscripcionRepository;
-
-    @Value("${aws.s3.bucket-name}")
-    private String bucketName;
-
-    private static final DateTimeFormatter FORMATTER =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-
-    public S3Service(S3Client s3Client, InscripcionRepository inscripcionRepository) {
-        this.s3Client               = s3Client;
-        this.inscripcionRepository  = inscripcionRepository;
-    }
-
-    // ── Key S3 ─────────────────────────────────────────────────────────────────
-
-    /**
-     * Construye la key S3 para una inscripción:
-     * resumen-{id}/resumen_inscripcion_{id}.txt
-     */
-    public String buildS3Key(Long id) {
-        return String.format("resumen-%d/resumen_inscripcion_%d.txt", id, id);
-    }
-
-    // ── Generar contenido del resumen ──────────────────────────────────────────
-
-    /**
-     * Genera el contenido textual del resumen de inscripción.
-     * Se usa tanto para guardar en disco como para subir a S3.
-     */
-    public String generarContenidoResumen(Inscripcion ins) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("================================================\n");
-        sb.append("   RESUMEN DE INSCRIPCIÓN - PLATAFORMA EDUCATIVA\n");
-        sb.append("================================================\n\n");
-        sb.append(String.format("ID de Inscripción : %d%n", ins.getId()));
-        sb.append(String.format("Estudiante        : %s%n", ins.getNombreEstudiante()));
-        sb.append(String.format("Fecha             : %s%n",
-                ins.getFechaInscripcion().format(FORMATTER)));
-        sb.append("\n------------------------------------------------\n");
-        sb.append("CURSOS INSCRITOS:\n");
-        sb.append("------------------------------------------------\n");
-
-        for (Curso curso : ins.getCursos()) {
-            sb.append(String.format("  - Nombre     : %s%n", curso.getNombre()));
-            sb.append(String.format("    Instructor : %s%n", curso.getInstructor()));
-            sb.append(String.format("    Duración   : %d horas%n", curso.getDuracion()));
-            sb.append(String.format("    Costo      : $%.2f%n", curso.getCosto()));
-            sb.append("\n");
-        }
-
-        sb.append("------------------------------------------------\n");
-        sb.append(String.format("TOTAL A PAGAR     : $%.2f%n", ins.getTotalPagar()));
-        sb.append("================================================\n");
-        return sb.toString();
-    }
-
-    // ── Generar archivo físico ─────────────────────────────────────────────────
-
-    /**
-     * Genera un archivo .txt físico en el sistema de archivos temporal del servidor
-     * y retorna el Path para que el controller pueda servirlo como descarga.
-     */
-    public Path generarArchivoFisico(Long id) throws IOException {
-        Inscripcion ins = obtenerInscripcion(id);
-        String contenido = generarContenidoResumen(ins);
-
-        Path tempFile = Files.createTempFile(
-                "resumen_inscripcion_" + id + "_", ".txt");
-        Files.writeString(tempFile, contenido, StandardCharsets.UTF_8);
-        return tempFile;
-    }
-
-    // ── Subir a S3 ─────────────────────────────────────────────────────────────
-
-    /**
-     * Genera el resumen de la inscripción y lo sube al bucket S3.
-     * Key: resumen-{id}/resumen_inscripcion_{id}.txt
-     */
-    public String subirResumen(Long id) {
-        Inscripcion ins = obtenerInscripcion(id);
-        String contenido = generarContenidoResumen(ins);
-        String key = buildS3Key(id);
-
-        byte[] bytes = contenido.getBytes(StandardCharsets.UTF_8);
-
-        PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .contentType("text/plain; charset=utf-8")
-                .contentLength((long) bytes.length)
-                .build();
-
-        s3Client.putObject(request, RequestBody.fromBytes(bytes));
-
-        return String.format("Resumen de inscripción %d subido exitosamente. Key: %s", id, key);
-    }
-
-    // ── Descargar desde S3 ─────────────────────────────────────────────────────
-
-    /**
-     * Descarga el archivo de resumen desde S3 y retorna sus bytes.
-     * Lanza NoSuchKeyException si el archivo no existe.
-     */
-    public byte[] descargarResumen(Long id) {
-        String key = buildS3Key(id);
-        validarExistencia(key, id);
-
-        GetObjectRequest request = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .build();
-
-        try (ResponseInputStream<GetObjectResponse> response = s3Client.getObject(request)) {
-            return response.readAllBytes();
-        } catch (IOException e) {
-            throw new RuntimeException(
-                    "Error al leer el archivo desde S3 para la inscripción " + id, e);
-        }
-    }
-
-    // ── Reemplazar en S3 ───────────────────────────────────────────────────────
-
-    /**
-     * Reemplaza el archivo de resumen en S3 con el contenido del MultipartFile recibido.
-     * Usa la misma key para sobreescribir el objeto existente.
-     */
-    public String reemplazarResumen(Long id, MultipartFile archivo) throws IOException {
-        // Validar que la inscripción exista en BD
-        obtenerInscripcion(id);
-        String key = buildS3Key(id);
-
-        byte[] bytes = archivo.getBytes();
-
-        PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .contentType("text/plain; charset=utf-8")
-                .contentLength((long) bytes.length)
-                .build();
-
-        s3Client.putObject(request, RequestBody.fromBytes(bytes));
-
-        return String.format("Resumen de inscripción %d reemplazado exitosamente. Key: %s", id, key);
-    }
-
-    // ── Eliminar de S3 ─────────────────────────────────────────────────────────
-
-    /**
-     * Elimina el archivo de resumen de S3.
-     * Valida primero que el objeto exista; si no, lanza IllegalStateException (→ 404).
-     */
-    public String eliminarResumen(Long id) {
-        String key = buildS3Key(id);
-        validarExistencia(key, id);
-
-        DeleteObjectRequest request = DeleteObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .build();
-
-        s3Client.deleteObject(request);
-
-        return String.format("Resumen de inscripción %d eliminado exitosamente del bucket.", id);
-    }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
-
-    /**
-     * Busca la inscripción en la base de datos; lanza excepción si no existe.
-     */
-    private Inscripcion obtenerInscripcion(Long id) {
-        return inscripcionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No existe una inscripción con ID: " + id));
-    }
-
-    /**
-     * Verifica que un objeto exista en S3 usando HeadObject.
-     * Si no existe (HTTP 404), lanza IllegalStateException con mensaje descriptivo.
-     * Si ocurre otro error de S3, lo relanza.
-     */
-    private void validarExistencia(String key, Long id) {
-        try {
-            HeadObjectRequest headRequest = HeadObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .build();
-            s3Client.headObject(headRequest);
-        } catch (S3Exception e) {
-            // El SDK v2 devuelve un status 404 dentro de S3Exception cuando el objeto no existe en un headObject
-            if (e.statusCode() == 404) {
-                throw new IllegalStateException(
-                        "No se encontró el resumen de la inscripción " + id +
-                        " en S3. Primero debe subirlo usando POST /inscripciones/" + id + "/resumen/subir");
-            }
-            // Si es otro error (ej. credenciales inválidas, bucket no existe), relanzamos la excepción
-            throw e;
-        }
-    }
-}
+-- =============================================
+-- CURSOS
+-- =============================================
+INSERT INTO CURSOS (id, nombre, instructor, duracion, costo)
+VALUES (1, 'Desarrollo Web con Java', 'Carlos López', 40, 150000.00);
+
+INSERT INTO CURSOS (id, nombre, instructor, duracion, costo)
+VALUES (2, 'Spring Boot Avanzado', 'Ana Martínez', 30, 120000.00);
+
+INSERT INTO CURSOS (id, nombre, instructor, duracion, costo)
+VALUES (3, 'Cloud Native con AWS', 'Pedro Soto', 20, 90000.00);
+
+-- =============================================
+-- INSCRIPCIONES
+-- =============================================
+INSERT INTO INSCRIPCIONES (id, nombre_estudiante, fecha_inscripcion, total_pagar)
+VALUES (1, 'María González', '2025-05-30T10:00:00', 270000.00);
+
+INSERT INTO INSCRIPCIONES (id, nombre_estudiante, fecha_inscripcion, total_pagar)
+VALUES (2, 'Juan Pérez', '2025-05-30T11:00:00', 210000.00);
+
+INSERT INTO INSCRIPCIONES (id, nombre_estudiante, fecha_inscripcion, total_pagar)
+VALUES (3, 'Valentina Torres', '2025-05-30T12:00:00', 90000.00);
+
+-- =============================================
+-- RELACIÓN INSCRIPCION - CURSOS
+-- =============================================
+INSERT INTO INSCRIPCION_CURSOS (inscripcion_id, curso_id) VALUES (1, 1);
+INSERT INTO INSCRIPCION_CURSOS (inscripcion_id, curso_id) VALUES (1, 2);
+
+INSERT INTO INSCRIPCION_CURSOS (inscripcion_id, curso_id) VALUES (2, 2);
+INSERT INTO INSCRIPCION_CURSOS (inscripcion_id, curso_id) VALUES (2, 3);
+
+INSERT INTO INSCRIPCION_CURSOS (inscripcion_id, curso_id) VALUES (3, 3);
 </file>
 
 <file path="src/test/java/com/duoc/plataforma_educativa/PlataformaEducativaApplicationTests.java">
@@ -3511,6 +1582,152 @@ public class InscripcionController {
 }
 </file>
 
+<file path="src/main/java/com/duoc/plataforma_educativa/model/Curso.java">
+package com.duoc.plataforma_educativa.model;
+
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "CURSOS")
+public class Curso {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String nombre;
+
+    @Column(nullable = false)
+    private String instructor;
+
+    @Column(nullable = false)
+    private Integer duracion; // en horas
+
+    @Column(nullable = false)
+    private Double costo;
+
+    // Constructores
+    public Curso() {}
+
+    public Curso(String nombre, String instructor, Integer duracion, Double costo) {
+        this.nombre = nombre;
+        this.instructor = instructor;
+        this.duracion = duracion;
+        this.costo = costo;
+    }
+
+    // Getters y Setters
+    public Long getId() { 
+        return id; 
+    }
+    public void setId(Long id) { 
+        this.id = id; 
+    }
+
+    public String getNombre() { 
+        return nombre; 
+    }
+    public void setNombre(String nombre) { 
+        this.nombre = nombre; 
+    }
+
+    public String getInstructor() { 
+        return instructor; 
+    }
+
+    public void setInstructor(String instructor) { 
+        this.instructor = instructor; 
+    }
+
+    public Integer getDuracion() { 
+        return duracion; 
+    }
+
+    public void setDuracion(Integer duracion) { 
+        this.duracion = duracion; 
+    }
+
+    public Double getCosto() { 
+        return costo; 
+    }
+
+    public void setCosto(Double costo) { 
+        this.costo = costo; 
+    }
+}
+</file>
+
+<file path="src/main/java/com/duoc/plataforma_educativa/model/Inscripcion.java">
+package com.duoc.plataforma_educativa.model;
+
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Entity
+@Table(name = "INSCRIPCIONES")
+public class Inscripcion {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String nombreEstudiante;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "INSCRIPCION_CURSOS",
+        joinColumns        = @JoinColumn(name = "INSCRIPCION_ID"),
+        inverseJoinColumns = @JoinColumn(name = "CURSO_ID")
+    )
+    private List<Curso> cursos;
+
+    @Column(nullable = false)
+    private Double totalPagar;
+
+    @Column(nullable = false)
+    private LocalDateTime fechaInscripcion;
+
+    // ── Constructores ──────────────────────────────────────
+    public Inscripcion() {}
+
+    public Inscripcion(String nombreEstudiante,
+                       List<Curso> cursos,
+                       Double totalPagar) {
+        this.nombreEstudiante = nombreEstudiante;
+        this.cursos           = cursos;
+        this.totalPagar       = totalPagar;
+        this.fechaInscripcion = LocalDateTime.now();
+    }
+
+    // ── Getters y Setters ──────────────────────────────────
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getNombreEstudiante() { return nombreEstudiante; }
+    public void setNombreEstudiante(String nombreEstudiante) {
+        this.nombreEstudiante = nombreEstudiante;
+    }
+
+    public List<Curso> getCursos() { return cursos; }
+    public void setCursos(List<Curso> cursos) { this.cursos = cursos; }
+
+    public Double getTotalPagar() { return totalPagar; }
+    public void setTotalPagar(Double totalPagar) {
+        this.totalPagar = totalPagar;
+    }
+
+    public LocalDateTime getFechaInscripcion() { return fechaInscripcion; }
+    public void setFechaInscripcion(LocalDateTime fechaInscripcion) {
+        this.fechaInscripcion = fechaInscripcion;
+    }
+}
+</file>
+
 <file path="src/main/resources/application.properties">
 # =============================================
 # CONFIGURACIÓN H2 (base de datos en memoria)
@@ -3525,9 +1742,13 @@ spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 spring.jpa.hibernate.ddl-auto=create-drop
 spring.jpa.show-sql=true
 
-# Consola H2 (opcional, útil para ver los datos en el navegador)
+# Consola H2
 spring.h2.console.enabled=true
 spring.h2.console.path=/h2-console
+
+# Inicialización de datos
+spring.jpa.defer-datasource-initialization=true
+spring.sql.init.mode=always
 
 # Puerto
 server.port=8080
@@ -3535,20 +1756,16 @@ server.port=8080
 # Actuator
 management.endpoints.web.exposure.include=health,info
 
-# Configuración AW3 S3
+# =============================================
+# CONFIGURACIÓN AWS S3
+# =============================================
 aws.s3.bucket-name=bucket-exp1-s2
 aws.region=${AWS_REGION:us-east-1}
 
-spring.jpa.defer-datasource-initialization=true
-spring.sql.init.mode=always
-
-
-# Spring Cloud AWS
-cloud.aws.credentials.access-key=${AWS_ACCESS_KEY_ID}
-cloud.aws.credentials.secret-key=${AWS_SECRET_ACCESS_KEY}
-cloud.aws.credentials.session-token=${AWS_SESSION_TOKEN}
-cloud.aws.region.static=${AWS_REGION:us-east-1}
-cloud.aws.stack.auto=false
+# Deshabilitar autoconfiguración de Spring Cloud AWS
+# (tu proyecto usa SDK v2 directo en StorageConfig.java)
+spring.cloud.aws.region.static=us-east-1
+spring.cloud.aws.stack.auto=false
 </file>
 
 <file path=".github/workflows/main.yml">

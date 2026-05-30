@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.duoc.plataforma_educativa.service.S3Service;
 
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import java.util.List;
 
 /**
  * Controlador REST para operaciones de almacenamiento en AWS S3.
@@ -183,6 +184,25 @@ public class S3Controller {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error al generar el archivo local: " + e.getMessage());
+        }
+    }
+
+    // ── GET /inscripciones/resumen/listar ─────────────────────────────────────
+    
+    /**
+     * Lista todos los objetos que existen actualmente en el bucket S3.
+     */
+    @GetMapping("/resumen/listar")
+    public ResponseEntity<?> listarTodoElBucket() {
+        try {
+            List<String> archivos = s3Service.listarArchivosS3();
+            return ResponseEntity.ok(archivos);
+        } catch (S3Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al listar los archivos de S3: " + e.awsErrorDetails().errorMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error inesperado: " + e.getMessage());
         }
     }
 

@@ -16,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Servicio que encapsula todas las operaciones sobre AWS S3:
@@ -192,6 +194,23 @@ public class S3Service {
         s3Client.deleteObject(request);
 
         return String.format("Resumen de inscripción %d eliminado exitosamente del bucket.", id);
+    }
+
+    // ── Listar de S3 ──────────────────────────────────────────────────────────
+
+    /**
+     * Lista todos los archivos (keys) existentes dentro del bucket S3.
+     */
+    public List<String> listarArchivosS3() {
+        ListObjectsV2Request request = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .build();
+
+        ListObjectsV2Response response = s3Client.listObjectsV2(request);
+        
+        return response.contents().stream()
+                .map(S3Object::key)
+                .collect(Collectors.toList());
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
