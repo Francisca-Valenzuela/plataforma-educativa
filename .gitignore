@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+codigo_base.xml
+repomix-output.xml
+

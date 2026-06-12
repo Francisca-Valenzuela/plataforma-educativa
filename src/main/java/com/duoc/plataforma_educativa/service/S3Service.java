@@ -51,7 +51,7 @@ public class S3Service {
      * resumen-{id}/resumen_inscripcion_{id}.txt
      */
     public String buildS3Key(Long id) {
-        return String.format("resumen-%d/resumen_inscripcion_%d.txt", id, id);
+        return String.format("%d/resumen_inscripcion_%d.txt", id, id);
     }
 
     // ── Generar contenido del resumen ──────────────────────────────────────────
