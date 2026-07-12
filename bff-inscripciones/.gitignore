@@ -19,7 +19,6 @@ target/
 *.iml
 *.ipr
 
-
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -32,7 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-codigo_base.xml
-repomix-output.xml
-.env
-

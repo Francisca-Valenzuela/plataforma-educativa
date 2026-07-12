@@ -13,14 +13,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Configuración del servicio de colas RabbitMQ (Semana 7).
+ * Configuración del servicio de colas RabbitMQ (Semana 7 + EFT S9).
  *
- * Define:
- *  - Cola durable "inscripciones.queue" (sobrevive a un reinicio del broker).
- *  - Exchange tipo Direct "inscripciones.exchange".
- *  - Binding entre la cola y el exchange mediante la routing key "inscripciones.routingkey".
- *  - Conversor de mensajes a JSON (Jackson2JsonMessageConverter), para poder enviar
- *    y recibir objetos Java (no solo texto plano) a través de la cola.
+ * Define dos flujos:
+ *  1) "inscripciones.queue" (Semana 7, ya existente): resumen de una
+ *     inscripción YA creada, para persistir en RESUMEN_COMPRA.
+ *  2) "solicitud-inscripcion.queue" (EFT S9, nuevo): solicitud de
+ *     inscripción entrante desde el BFF, antes de persistir.
  */
 @Configuration
 public class RabbitMQConfig {
@@ -29,9 +28,12 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_INSCRIPCIONES = "inscripciones.exchange";
     public static final String ROUTING_KEY_INSCRIPCIONES = "inscripciones.routingkey";
 
+    public static final String QUEUE_SOLICITUD_INSCRIPCION = "solicitud-inscripcion.queue";
+    public static final String EXCHANGE_SOLICITUD_INSCRIPCION = "solicitud-inscripcion.exchange";
+    public static final String ROUTING_KEY_SOLICITUD_INSCRIPCION = "solicitud-inscripcion.routingkey";
+
     @Bean
     public Queue queue() {
-        // durable = true -> la cola persiste aunque RabbitMQ se reinicie
         return new Queue(QUEUE_INSCRIPCIONES, true);
     }
 
@@ -46,11 +48,29 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public MessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter(); // permite enviar/recibir objetos, no solo texto
+    public Queue solicitudInscripcionQueue() {
+        return new Queue(QUEUE_SOLICITUD_INSCRIPCION, true);
     }
 
-    
+    @Bean
+    public DirectExchange solicitudInscripcionExchange() {
+        return new DirectExchange(EXCHANGE_SOLICITUD_INSCRIPCION);
+    }
+
+    @Bean
+    public Binding solicitudInscripcionBinding(Queue solicitudInscripcionQueue,
+                                                DirectExchange solicitudInscripcionExchange) {
+        return BindingBuilder.bind(solicitudInscripcionQueue)
+                .to(solicitudInscripcionExchange)
+                .with(ROUTING_KEY_SOLICITUD_INSCRIPCION);
+    }
+
+    @Bean
+    public MessageConverter jsonMessageConverter() {
+        return new Jackson2JsonMessageConverter();
+    }
+
+    @Bean
     public AmqpTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(jsonMessageConverter());

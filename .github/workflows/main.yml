@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Images
 
 on:
   push:
@@ -25,17 +25,23 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Paso 3: Construir la imagen Docker desde la raíz del proyecto
-      - name: Build Docker Image
+      # Paso 3: Construir la imagen de plataforma-educativa (raíz del repo)
+      - name: Build plataforma-educativa image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-educativa:latest .
 
-      # Paso 4: Hacer push de la imagen a DockerHub
-      - name: Push Docker Image
+      # Paso 4: Construir la imagen del BFF (bff-inscripciones)
+      - name: Build bff-inscripciones image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/bff-inscripciones:latest ./bff-inscripciones
+
+      # Paso 5: Push de ambas imágenes a DockerHub
+      - name: Push images
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-educativa:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/bff-inscripciones:latest
 
-      # Paso 5: Configurar credenciales AWS (requerido para la sesión temporal de AWS Academy)
+      # Paso 6: Configurar credenciales AWS (requerido para la sesión temporal de AWS Academy)
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -44,14 +50,14 @@ jobs:
           aws-region: us-east-1
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
 
-      # Paso 5.5: Agregar la llave SSH privada para conectarse a EC2
+      # Paso 7: Agregar la llave SSH privada para conectarse a EC2
       - name: Add SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      # Paso 6: Conectarse a EC2 via SSH y desplegar el contenedor
+      # Paso 8: Conectarse a EC2 via SSH y desplegar los tres contenedores
       - name: SSH commands to deploy
         run: |
           ssh -i ~/.ssh/id_rsa \
@@ -62,23 +68,40 @@ jobs:
             echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login \
               -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
-            # Descargar la última versión de la imagen
+            # Descargar las últimas versiones de ambas imágenes
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-educativa:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bff-inscripciones:latest
 
-            # Detener y eliminar el contenedor previo si existe
+            # --- RabbitMQ ---
+            docker start rabbitmq-plataforma-educativa 2>/dev/null || docker run -d \
+              --name rabbitmq-plataforma-educativa \
+              --network host \
+              -e RABBITMQ_DEFAULT_USER=guest \
+              -e RABBITMQ_DEFAULT_PASS=guest \
+              --restart unless-stopped \
+              rabbitmq:3-management
+
+            # --- plataforma-educativa ---
             docker stop plataforma-educativa || true
             docker rm   plataforma-educativa || true
-
-            # Iniciar el nuevo contenedor en puerto 8080 inyectando credenciales S3
             docker run -d \
               --name plataforma-educativa \
               --network host \
               -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
               -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
               -e AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}" \
-             -e SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI="${{ secrets.AZURE_ISSUER_URI }}" \
+              -e SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI="${{ secrets.AZURE_ISSUER_URI }}" \
               -e AWS_REGION="us-east-1" \
               --restart unless-stopped \
               ${{ secrets.DOCKERHUB_USERNAME }}/plataforma-educativa:latest
+
+            # --- bff-inscripciones ---
+            docker stop bff-inscripciones || true
+            docker rm   bff-inscripciones || true
+            docker run -d \
+              --name bff-inscripciones \
+              --network host \
+              -e SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI="${{ secrets.AZURE_ISSUER_URI }}" \
+              --restart unless-stopped \
+              ${{ secrets.DOCKERHUB_USERNAME }}/bff-inscripciones:latest
           EOF
-          

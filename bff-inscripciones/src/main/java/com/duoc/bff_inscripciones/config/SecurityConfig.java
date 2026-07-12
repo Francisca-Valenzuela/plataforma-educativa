@@ -1,4 +1,4 @@
-package com.duoc.plataforma_educativa.config;
+package com.duoc.bff_inscripciones.config;
 
 import java.util.List;
 
@@ -24,11 +24,8 @@ public class SecurityConfig {
             .sessionManagement(s ->
                 s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers(HttpMethod.POST, "/cursos").hasAuthority("ROLE_INSTRUCTOR")
-                .requestMatchers(HttpMethod.POST, "/inscripciones").hasAuthority("ROLE_ESTUDIANTE")
-                .requestMatchers(HttpMethod.GET, "/resumenes-compra/**").hasAuthority("ROLE_INSTRUCTOR")
+                .requestMatchers(HttpMethod.POST, "/bff/inscripciones").hasAuthority("ROLE_ESTUDIANTE")
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt ->
@@ -38,8 +35,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Extrae el claim personalizado "extension_consultaRole" del JWT de Azure AD B2C
-    // y lo mapea a un GrantedAuthority con prefijo ROLE_ (ej. ROLE_ESTUDIANTE, ROLE_INSTRUCTOR)
     private JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter((Jwt jwt) -> {
